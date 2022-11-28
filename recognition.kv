@@ -1,0 +1,19 @@
+#:kivy 1.0.9
+
+<RecognitionWidget>:
+    canvas.before:
+        Color:
+            rgba: 0.54, 0.50, 0.56, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Camera:
+        id: camera
+        resolution: (640, 480)
+        play: False
+    ToggleButton:
+        text: "Toggle webcam"
+        on_press: camera.play = not camera.play
+        size: 150, 100
+        size_hint: None, None
+        on_press: root.newclr(self)
