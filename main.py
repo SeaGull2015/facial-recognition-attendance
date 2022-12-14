@@ -50,10 +50,7 @@ class RecognitionApp(App):
             self.classNames.append(os.path.splitext(cls)[0])
         self.encodeListKnown = self.findEncodings(self.images)
         # opencv2 stuffs
-        try:
-            self.capture = cv2.VideoCapture(0)
-        except:
-            self.stop()
+        self.capture = cv2.VideoCapture(0)
         Clock.schedule_interval(self.update, 1.0 / 33.0)
         return layout
         # return RecognitionWidget()
