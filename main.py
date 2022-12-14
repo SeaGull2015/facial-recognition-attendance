@@ -24,6 +24,9 @@ class RecognitionApp(App):
     classNames = []
     myList = os.listdir(path)
     encodeListKnown = []
+    namesToAddAfterSave = dict() # dict because fasta
+    namesQueue = set()
+    namesAreQueued = False
 
     def build(self):
         self.img1 = Image()
@@ -47,7 +50,10 @@ class RecognitionApp(App):
             self.classNames.append(os.path.splitext(cls)[0])
         self.encodeListKnown = self.findEncodings(self.images)
         # opencv2 stuffs
-        self.capture = cv2.VideoCapture(0)
+        try:
+            self.capture = cv2.VideoCapture(0)
+        except:
+            self.stop()
         Clock.schedule_interval(self.update, 1.0 / 33.0)
         return layout
         # return RecognitionWidget()
@@ -66,7 +72,11 @@ class RecognitionApp(App):
 
             if matches[matchIndex]:
                 name = self.classNames[matchIndex]
-                self.markAttendance(name) # this suxxx performance a lot
+                #self.markAttendance(name) # this suxxx performance a lot
+                self.namesQueue.add(name) # this shouldn't take much time
+                if not self.namesAreQueued:
+                    self.namesAreQueued = True
+                    Clock.schedule_once(self.emptyNamesQueue, 10) # every 10 seconds we update the list
                 if self.showCam:
                     for top, right, bottom, left in face_locations:
                         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
@@ -87,9 +97,6 @@ class RecognitionApp(App):
             # display image from the texture
             self.img1.texture = texture1
 
-    def savefile(instance):
-        pass
-
     def toggleCam(instance, value):
         instance.showCam = not instance.showCam
         instance.img1.texture = None
@@ -103,17 +110,24 @@ class RecognitionApp(App):
             encodeList.append(encode)
         return encodeList
 
-    def markAttendance(self, name):
-        with open("Attendance.csv", "r+") as f:
-            myDataList = f.readlines()
-            nameList = []
-            for line in myDataList:
-                entry = line.split(',')
-                nameList.append(entry[0])
-            if name not in nameList:
-                now = datetime.now()
-                dtString = now.strftime("%H:%M:%S")
-                f.writelines(f'\n{name}, {dtString}')
+    def savefile(self, instance): # so basicly we have a recent queue from which we push to the long-time queue, and the to the file when the save button is pressed
+        for name in self.namesToAddAfterSave.keys():
+            with open("Attendance.csv", "r+") as f:
+                myDataList = f.readlines()
+                nameList = []
+                for line in myDataList:
+                    entry = line.split(',')
+                    nameList.append(entry[0])
+                if name not in nameList:
+                    f.writelines(f'\n{name}, {self.namesToAddAfterSave[name]}')
+        #self.namesToAddAfterSave.clear() # not sure if we need that
+    def emptyNamesQueue(self, dt):
+        for name in self.namesQueue:
+            self.namesToAddAfterSave[name] = datetime.now()
+            print(name)
+        self.namesQueue.clear()
+        self.namesAreQueued = False
+
 
 
 if __name__ == '__main__':
