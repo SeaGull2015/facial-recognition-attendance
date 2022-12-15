@@ -21,11 +21,11 @@ class RecognitionApp(App):
     path = 'KnownFaces'
     images = []
     classNames = []
-    myList = os.listdir(path)
+    unencodedFacesList = os.listdir(path)
     encodeListKnown = []
-    namesToAddAfterSave = dict() # dict because fasta
-    namesQueue = set()
-    namesAreQueued = False
+    namesToAddAfterSave = dict() # dict because fasta - it tells what to save after button press
+    namesQueue = set() # queue for people to move into the namesToAddAfterSave
+    namesAreQueued = False # do we need to schedule a move from namesQueue to namesToAddAfterSave?
 
     def build(self):
         self.img1 = Image()
@@ -49,7 +49,7 @@ class RecognitionApp(App):
 
 
         # get faces to read
-        for cls in self.myList:
+        for cls in self.unencodedFacesList:
             curImg = cv2.imread(f'{self.path}/{cls}')
             self.images.append(curImg)
             self.classNames.append(os.path.splitext(cls)[0])
