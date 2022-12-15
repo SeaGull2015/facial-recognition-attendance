@@ -32,6 +32,7 @@ class RecognitionApp(App):
         self.img1 = Image()
         btn1 = Button(text='Save to')
         btn2 = Button(text='toggle camera')
+        box = BoxLayout(orientation='vertical')
         layout = BoxLayout(orientation='vertical')
         btn1.size = 100, 100
         btn2.size = 100, 100
@@ -39,9 +40,10 @@ class RecognitionApp(App):
         btn2.size_hint = None, None
         btn1.bind(on_press=self.savefile)
         btn2.bind(on_press=self.toggleCam)
+        box.add_widget(self.img1)
         layout.add_widget(btn1)
         layout.add_widget(btn2)
-        layout.add_widget(self.img1)
+        layout.add_widget(box)
 
         # get faces to read
         for cls in self.myList:
