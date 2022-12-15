@@ -29,7 +29,7 @@ class RecognitionApp(App):
 
     def build(self):
         self.img1 = Image()
-        btn1 = Button(text='Save to')
+        btn1 = Button(text='Save')
         btn2 = Button(text='toggle camera')
         imageBox = BoxLayout()
         #imageBox.size = 640, 480
