@@ -3,6 +3,7 @@ from kivy.uix.widget import Widget
 import cv2  # opencv-python - requires numpy
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.clock import Clock
@@ -18,7 +19,7 @@ class RecognitionWidget(BoxLayout):
 
 
 class RecognitionApp(App):
-    showCam = False
+    showCam = True
     path = 'KnownFaces'
     images = []
     classNames = []
@@ -32,18 +33,22 @@ class RecognitionApp(App):
         self.img1 = Image()
         btn1 = Button(text='Save to')
         btn2 = Button(text='toggle camera')
-        box = BoxLayout(orientation='vertical')
+        imageBox = BoxLayout()
+        #imageBox.size = 640, 480
+        #imageBox.size_hint = None, None
+        buttonBox = BoxLayout()
+        buttonBox.size_hint_y = None
         layout = BoxLayout(orientation='vertical')
         btn1.size = 100, 100
         btn2.size = 100, 100
-        btn1.size_hint = None, None
-        btn2.size_hint = None, None
         btn1.bind(on_press=self.savefile)
         btn2.bind(on_press=self.toggleCam)
-        box.add_widget(self.img1)
-        layout.add_widget(btn1)
-        layout.add_widget(btn2)
-        layout.add_widget(box)
+        imageBox.add_widget(self.img1)
+        buttonBox.add_widget(btn1)
+        buttonBox.add_widget(btn2)
+        layout.add_widget(buttonBox)
+        layout.add_widget(imageBox)
+
 
         # get faces to read
         for cls in self.myList:
