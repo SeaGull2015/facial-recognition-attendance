@@ -12,8 +12,6 @@ import numpy
 import face_recognition
 import os
 from datetime import datetime
-
-
 class RecognitionWidget(BoxLayout):
     pass
 
@@ -65,7 +63,7 @@ class RecognitionApp(App):
     def update(self, dt):
         success, frame = self.capture.read()  # get the frame
         rgb_frame = frame[:, :, ::-1]  # BGR2RGB
-        #rgb_frame = cv2.resize(frame, (0, 0), None, 0.25, 0.25) # could do that to make it faster
+        rgb_frame = cv2.resize(frame, (0, 0), None, 0.25, 0.25) # could do that to make it faster
         face_locations = face_recognition.face_locations(rgb_frame)  # find faces
         encoded_faces = face_recognition.face_encodings(rgb_frame, face_locations)
 
@@ -83,6 +81,10 @@ class RecognitionApp(App):
                     Clock.schedule_once(self.emptyNamesQueue, 10) # every 10 seconds we update the list
                 if self.showCam:
                     for top, right, bottom, left in face_locations:
+                        top *= 4
+                        right *= 4
+                        bottom *= 4
+                        left *= 4
                         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
                         cv2.putText(frame, name, (left + 6, bottom - 6),
                                     cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255),2)
@@ -115,6 +117,7 @@ class RecognitionApp(App):
         return encodeList
 
     def savefile(self, instance): # so basicly we have a recent queue from which we push to the long-time queue, and the to the file when the save button is pressed
+        self.emptyNamesQueue(0)
         for name in self.namesToAddAfterSave.keys():
             with open("Attendance.csv", "r+") as f:
                 myDataList = f.readlines()
