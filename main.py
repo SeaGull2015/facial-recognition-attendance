@@ -12,11 +12,13 @@ import numpy
 import face_recognition
 import os
 from datetime import datetime
+from kivy.uix.screenmanager import ScreenManager, Screen
 class RecognitionWidget(BoxLayout):
     pass
 
 
 class RecognitionApp(App):
+    screenManager = ScreenManager()
     showCam = True
     path = 'KnownFaces'
     images = []
@@ -28,25 +30,51 @@ class RecognitionApp(App):
     namesAreQueued = False # do we need to schedule a move from namesQueue to namesToAddAfterSave?
 
     def build(self):
+        #main screen
+        saveButton = Button(text='Save')
+        toggleCamButton = Button(text='toggle camera')
+        settingsButton = Button(text='Settings')
+        saveButton.size = 100, 100
+        toggleCamButton.size = 100, 100
+        settingsButton.size = 100, 100
+        saveButton.bind(on_press=self.savefile)
+        toggleCamButton.bind(on_press=self.toggleCam)
+        settingsButton.bind(on_press=self.gotoSettings)
+
         self.img1 = Image()
-        btn1 = Button(text='Save')
-        btn2 = Button(text='toggle camera')
         imageBox = BoxLayout()
         #imageBox.size = 640, 480
         #imageBox.size_hint = None, None
         buttonBox = BoxLayout()
         buttonBox.size_hint_y = None
-        layout = BoxLayout(orientation='vertical')
-        btn1.size = 100, 100
-        btn2.size = 100, 100
-        btn1.bind(on_press=self.savefile)
-        btn2.bind(on_press=self.toggleCam)
-        imageBox.add_widget(self.img1)
-        buttonBox.add_widget(btn1)
-        buttonBox.add_widget(btn2)
-        layout.add_widget(buttonBox)
-        layout.add_widget(imageBox)
+        layoutMain = BoxLayout(orientation='vertical')
+        self.layoutMainScreen = Screen()
 
+        imageBox.add_widget(self.img1)
+        buttonBox.add_widget(saveButton)
+        buttonBox.add_widget(toggleCamButton)
+        buttonBox.add_widget(settingsButton)
+        layoutMain.add_widget(buttonBox)
+        layoutMain.add_widget(imageBox)
+        self.layoutMainScreen.add_widget(layoutMain)
+        self.layoutMainScreen.name = 'layoutMainScreen'
+
+        #settings screen
+        mainGotoButton = Button(text='return')
+        mainGotoButton.size = 100, 100
+        mainGotoButton.size_hint_y = None
+        mainGotoButton.bind(on_press=self.gotoMain)
+        layoutSettings = BoxLayout(orientation='vertical')
+
+        self.layoutSettingsScreen = Screen()
+
+        layoutSettings.add_widget(mainGotoButton)
+        self.layoutSettingsScreen.add_widget(layoutSettings)
+        self.layoutSettingsScreen.name = 'layoutSettingsScreen'
+
+        # fin
+        self.screenManager.add_widget(self.layoutMainScreen)
+        self.screenManager.add_widget(self.layoutSettingsScreen)
 
         # get faces to read
         for cls in self.unencodedFacesList:
@@ -57,7 +85,7 @@ class RecognitionApp(App):
         # opencv2 stuffs
         self.capture = cv2.VideoCapture(0)
         Clock.schedule_interval(self.update, 1.0 / 33.0)
-        return layout
+        return self.screenManager
         # return RecognitionWidget()
 
     def update(self, dt):
@@ -134,6 +162,11 @@ class RecognitionApp(App):
             print(name)
         self.namesQueue.clear()
         self.namesAreQueued = False
+    def gotoSettings(self, instance):
+        self.screenManager.current = 'layoutSettingsScreen'
+
+    def gotoMain(self, instance):
+        self.screenManager.current = 'layoutMainScreen'
 
 
 
