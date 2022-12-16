@@ -10,6 +10,7 @@ from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
 import numpy
 import face_recognition
 import os
@@ -31,6 +32,7 @@ class RecognitionApp(App):
     namesQueue = set() # queue for people to move into the namesToAddAfterSave
     namesAreQueued = False # do we need to schedule a move from namesQueue to namesToAddAfterSave?
     multiplyOfModelVideo = 1.0
+    saveEveryTimeBool = False
 
     def build(self):
         #main screen
@@ -86,9 +88,23 @@ class RecognitionApp(App):
         resizeBox.add_widget(self.resizeLabel)
         resizeBox.add_widget(self.resizeTextInput)
 
+        clearDictBox = BoxLayout()
+        clearDictLabel = Label(text='Mark attendance after each save')
+        clearDictCheckBox = CheckBox()
+        clearDictCheckBox.size = 100, 30
+        clearDictCheckBox.bind(active=self.saveEveryTime)
+        clearDictCheckBox.size_hint_y = None
+        clearDictLabel.size_hint_y = None
+        clearDictLabel.size = 100, 30
+        clearDictBox.size_hint_y = None
+        clearDictBox.size = 100, 100
+        clearDictBox.add_widget(clearDictLabel)
+        clearDictBox.add_widget(clearDictCheckBox)
+
 
         self.layoutSettingsScreen = Screen()
 
+        layoutSettings.add_widget(clearDictBox)
         layoutSettings.add_widget(resizeBox)
         layoutSettings.add_widget(mainGotoButton)
         self.layoutSettingsScreen.add_widget(layoutSettings)
@@ -176,9 +192,9 @@ class RecognitionApp(App):
                 for line in myDataList:
                     entry = line.split(',')
                     nameList.append(entry[0])
-                if name not in nameList:
+                if name not in nameList or self.saveEveryTimeBool: # commented cause we check it in the names to add dict
                     f.writelines(f'\n{name}, {self.namesToAddAfterSave[name]}')
-        #self.namesToAddAfterSave.clear() # not sure if we need that
+        self.namesToAddAfterSave.clear() # not sure if we don't need that
     def emptyNamesQueue(self, dt):
         for name in self.namesQueue:
             self.namesToAddAfterSave[name] = datetime.now()
@@ -197,6 +213,12 @@ class RecognitionApp(App):
         inpstr = 'Set multiply for model([0, 1]), current is {num}:'
         inpstr = inpstr.format(num=self.multiplyOfModelVideo)
         self.resizeLabel.text = inpstr
+
+    def saveEveryTime(self, somethingidunno, value):
+        if value:
+            self.saveEveryTimeBool = True
+        else:
+            self.saveEveryTimeBool = False
 
 
 
