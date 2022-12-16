@@ -8,6 +8,8 @@ from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
 import numpy
 import face_recognition
 import os
@@ -28,6 +30,7 @@ class RecognitionApp(App):
     namesToAddAfterSave = dict() # dict because fasta - it tells what to save after button press
     namesQueue = set() # queue for people to move into the namesToAddAfterSave
     namesAreQueued = False # do we need to schedule a move from namesQueue to namesToAddAfterSave?
+    multiplyOfModelVideo = 1.0
 
     def build(self):
         #main screen
@@ -66,8 +69,27 @@ class RecognitionApp(App):
         mainGotoButton.bind(on_press=self.gotoMain)
         layoutSettings = BoxLayout(orientation='vertical')
 
+        resizeBox = BoxLayout()
+        resizeBox.size_hint_y = None
+        resizeBox.size = 100, 100
+        inpstr = 'Set multiply for model([0, 1]), current is {num}:'
+        inpstr = inpstr.format(num=self.multiplyOfModelVideo)
+        self.resizeLabel = Label(text=inpstr)
+        self.resizeLabel.size_hint_y = None
+        self.resizeLabel.size = 100, 30
+        self.resizeTextInput = TextInput()
+        self.resizeTextInput.multiline = False
+        self.resizeTextInput.size = 30, 30
+        self.resizeTextInput.size_hint_y = None
+        self.resizeTextInput.hint_text = str(self.multiplyOfModelVideo)
+        self.resizeTextInput.bind(on_text_validate=self.onEnterResizeTextInput)
+        resizeBox.add_widget(self.resizeLabel)
+        resizeBox.add_widget(self.resizeTextInput)
+
+
         self.layoutSettingsScreen = Screen()
 
+        layoutSettings.add_widget(resizeBox)
         layoutSettings.add_widget(mainGotoButton)
         self.layoutSettingsScreen.add_widget(layoutSettings)
         self.layoutSettingsScreen.name = 'layoutSettingsScreen'
@@ -91,7 +113,8 @@ class RecognitionApp(App):
     def update(self, dt):
         success, frame = self.capture.read()  # get the frame
         rgb_frame = frame[:, :, ::-1]  # BGR2RGB
-        rgb_frame = cv2.resize(frame, (0, 0), None, 0.25, 0.25) # could do that to make it faster
+        if self.multiplyOfModelVideo != 1.0:
+            rgb_frame = cv2.resize(frame, (0, 0), None, self.multiplyOfModelVideo, self.multiplyOfModelVideo) # could do that to make it faster
         face_locations = face_recognition.face_locations(rgb_frame)  # find faces
         encoded_faces = face_recognition.face_encodings(rgb_frame, face_locations)
 
@@ -108,14 +131,14 @@ class RecognitionApp(App):
                     self.namesAreQueued = True
                     Clock.schedule_once(self.emptyNamesQueue, 10) # every 10 seconds we update the list
                 if self.showCam:
-                    for top, right, bottom, left in face_locations:
-                        top *= 4
-                        right *= 4
-                        bottom *= 4
-                        left *= 4
-                        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                        cv2.putText(frame, name, (left + 6, bottom - 6),
-                                    cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255),2)
+                    top, right, bottom, left = faceLoc
+                    top *= int(1 / self.multiplyOfModelVideo)
+                    right *= int(1 / self.multiplyOfModelVideo)
+                    bottom *= int(1 / self.multiplyOfModelVideo)
+                    left *= int(1 / self.multiplyOfModelVideo)
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                    cv2.putText(frame, name, (left + 6, bottom - 6),
+                                cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
 
             # if (self. showCam): # draw a rectangle around the face
             #    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
@@ -167,6 +190,16 @@ class RecognitionApp(App):
 
     def gotoMain(self, instance):
         self.screenManager.current = 'layoutMainScreen'
+
+    def onEnterResizeTextInput(self, v):
+        value = float(self.resizeTextInput.text)
+        self.multiplyOfModelVideo = numpy.clip(value, 0.001, 1)
+        inpstr = 'Set multiply for model([0, 1]), current is {num}:'
+        inpstr = inpstr.format(num=self.multiplyOfModelVideo)
+        self.resizeLabel.text = inpstr
+
+
+
 
 
 
