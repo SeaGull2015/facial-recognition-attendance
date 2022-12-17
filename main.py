@@ -189,10 +189,19 @@ class RecognitionApp(App):
 
     def findEncodings(self, images):
         encodeList = []
-        for img in images:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            encode = face_recognition.face_encodings(img)[0]
-            encodeList.append(encode)
+        failures = []
+        for i in range(len(images)):
+            try:
+                images[i] = cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB)
+                encode = face_recognition.face_encodings(images[i])[0]
+                encodeList.append(encode)
+            except:
+                failures.append(self.classNames[i]) # bruh?
+        if len(failures) != 0:
+            err = "Failed to recognise those images: "
+            for f in failures:
+                err += f + " "
+            self.errPopup(err, "ok")
         return encodeList
 
     def savefile(self, instance): # so basicly we have a recent queue from which we push to the long-time queue, and the to the file when the save button is pressed
