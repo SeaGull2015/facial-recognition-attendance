@@ -11,11 +11,13 @@ from kivy.graphics.texture import Texture
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.screenmanager import ScreenManager, Screen
+from  kivy.uix.popup import Popup
 import numpy
 import face_recognition
 import os
 from datetime import datetime
-from kivy.uix.screenmanager import ScreenManager, Screen
+
 class RecognitionWidget(BoxLayout):
     pass
 
@@ -33,6 +35,7 @@ class RecognitionApp(App):
     namesAreQueued = False # do we need to schedule a move from namesQueue to namesToAddAfterSave?
     multiplyOfModelVideo = 1.0
     saveEveryTimeBool = False
+    waitingForInput = True
 
     def build(self):
         #main screen
@@ -110,19 +113,28 @@ class RecognitionApp(App):
         self.layoutSettingsScreen.add_widget(layoutSettings)
         self.layoutSettingsScreen.name = 'layoutSettingsScreen'
 
+        #empty screen
+        self.layoutEmptyScreen = Screen()
+        self.layoutEmptyScreen.name = "layoutEmptyScreen"
         # fin
         self.screenManager.add_widget(self.layoutMainScreen)
         self.screenManager.add_widget(self.layoutSettingsScreen)
+        self.screenManager.add_widget(self.layoutEmptyScreen)
 
-        # get faces to read
-        for cls in self.unencodedFacesList:
-            curImg = cv2.imread(f'{self.path}/{cls}')
-            self.images.append(curImg)
-            self.classNames.append(os.path.splitext(cls)[0])
-        self.encodeListKnown = self.findEncodings(self.images)
         # opencv2 stuffs
-        self.capture = cv2.VideoCapture(0)
-        Clock.schedule_interval(self.update, 1.0 / 33.0)
+        self.capture = cv2.VideoCapture(0)  # get the first camera
+        success, frame = self.capture.read()
+        if not success:
+            self.errPopup("Failed to get video from camera", "retry", self.retryLoadCamera)
+        else:
+            # get faces to read
+            for cls in self.unencodedFacesList:
+                curImg = cv2.imread(f'{self.path}/{cls}')
+                self.images.append(curImg)
+                self.classNames.append(os.path.splitext(cls)[0])
+            self.encodeListKnown = self.findEncodings(self.images)
+            Clock.schedule_interval(self.update, 1.0 / 33.0)
+
         return self.screenManager
         # return RecognitionWidget()
 
@@ -191,8 +203,8 @@ class RecognitionApp(App):
                 nameList = []
                 for line in myDataList:
                     entry = line.split(',')
-                    nameList.append(entry[0])
-                if name not in nameList or self.saveEveryTimeBool: # commented cause we check it in the names to add dict
+                    nameList.append(entry[0]) # btw checking every time is not cool performance-wise, but not critical
+                if self.saveEveryTimeBool or name not in nameList: # commented cause we check it in the names to add dict
                     f.writelines(f'\n{name}, {self.namesToAddAfterSave[name]}')
         self.namesToAddAfterSave.clear() # not sure if we don't need that
     def emptyNamesQueue(self, dt):
@@ -204,7 +216,7 @@ class RecognitionApp(App):
     def gotoSettings(self, instance):
         self.screenManager.current = 'layoutSettingsScreen'
 
-    def gotoMain(self, instance):
+    def gotoMain(self, instance = None):
         self.screenManager.current = 'layoutMainScreen'
 
     def onEnterResizeTextInput(self, v):
@@ -219,6 +231,33 @@ class RecognitionApp(App):
             self.saveEveryTimeBool = True
         else:
             self.saveEveryTimeBool = False
+
+    def retryLoadCamera(self, caller = None):
+        #self.capture = cv2.VideoCapture(0)
+        #success, frame = self.capture.read()
+        #self.gotoMain(self)
+        #if not success: self.errPopup("Failed to get video from camera", "retry")
+        #else: Clock.schedule_interval(self.update, 1.0 / 33.0)
+        exit(0) # bruh
+    def errPopup(self, errtext, buttontext, callback = None):
+        self.screenManager.current = 'layoutEmptyScreen' # for some reason a pop up doesn't actually pop up - we need to place it on empty screen
+        popBox = BoxLayout(orientation="vertical")
+        l = Label(text=errtext)
+        b = Button(text=buttontext)
+        popBox.add_widget(l)
+        popBox.add_widget(b)
+        popup = Popup(title='Error',
+                      content=popBox,
+                      size_hint=(None, None), size=(400, 400),
+                      auto_dismiss=False)
+
+        if callback:
+            b.on_touch_up = callback
+            b.on_press = popup.dismiss
+        else: # you probably shouldn't do that
+            b.on_touch_up = self.gotoMain
+            b.on_press = popup.dismiss
+        popup.open()
 
 
 
